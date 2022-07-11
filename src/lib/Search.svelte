@@ -2,45 +2,58 @@
     import algoliasearch from 'algoliasearch'
     import instantsearch from 'instantsearch.js'
     import { searchBox, hits } from 'instantsearch.js/es/widgets'
-    import { onMount } from 'svelte';
+    import Card from './Card.svelte'
 
     const appId = import.meta.env.VITE_APP_ID
     const apiKey = import.meta.env.VITE_API_KEY
+    const adminApiKey = import.meta.env.VITE_API_ADMIN_KEY
 
-    onMount(() => {
-        const searchClient = algoliasearch(appId, apiKey)
+    let strSearch = ''
 
-        const search = instantsearch({
-            indexName: 'telejan',
-            searchClient,
-        })
+    const client = algoliasearch(appId, adminApiKey)
+    const index = client.initIndex("telejan")
 
-        search.addWidgets([
-            searchBox({
-                container: "#searchbox",
-                autofocus: true,
-                showLoadingIndicator: true,
-                placeholder: "Busque serviço, produto ou empresa...",
-            }),
+    let results = []
 
-            hits({
-                container: "#hits",
-                templates: {
-                    item: `
-                        <section style="width: 100%">
-                            <img src="https://app.tjcampo.com/assets/images/campo.png" align="left" alt="logomarca" width="50px" />
-                            <h2>{{#helpers.highlight}}{ "attribute": "empresa" }{{/helpers.highlight}}</h2>
-                            <p>{{#helpers.highlight}}{ "attribute": "categoria" }{{/helpers.highlight}}</p>
-                        </section>
-                    `,
-                    empty: "Desculpe, não localizamos nada. Tente ser mais especifico!",
-                }
-            }),
+    $: if (strSearch) {
+        index.search(strSearch)
+            .then(({ hits }) => {
+                console.log(hits)
+                results = hits
+            })
+            .catch(err => {
+                console.log(err)
+            })
+    }
 
-        ])
+    const objects = [
+        {
+            empresa: "Seu Lucca Barbearia",
+            categorias: "Barbearia, Serviço",
+            palavras_chave: "barbearia, corte, cabeleireiro, cabelo, barba, bigode, tingir",
+        },
+        {
+            empresa: "Elder Ar Condicionado",
+            categorias: "Refrigeração, Serviço",
+            palavras_chave: "refrigerar, ar, frio, condiciondor, veiculo",
+        },
+    ]
 
-        search.start()
-    })
+    const el = (q) => document.querySelector(q)
+    const newId = () => Date.now()
+
+    function addEmpresa (ev) {
+        const empresa = {
+            objectID: newId(),
+            empresa: el('#empresa').value,
+            categorias: el('#categorias').value,
+            palavras_chave: el('#palavras_chave').value,
+        }
+        // console.log(empresa)
+        index.saveObject(empresa)
+            .then(savedObj => console.log('Empresa salva.', empresa))
+            .catch(err => console.log('Erro ao salvar empresa.\n', err))
+    }
 </script>
 
 <style>
@@ -57,6 +70,10 @@
     #box .right-panel {
         width: 60%;
     }
+
+    :global(em) {
+        color: blue;
+    }
 </style>
 
 <div id="box">
@@ -69,8 +86,32 @@
     </div>
 
     <div class="right-panel">
-        <div id="searchbox"></div>
-        <div id="hits"></div>
+        <div id="searchbox">
+            <input type="text" bind:value={strSearch} id="search">
+        </div>
+        <div id="hits">
+            {#each results as item}
+                <p on:click={() => strSearch = item.empresa}>{@html item._highlightResult.empresa.value}</p>
+            {/each}
+        </div>
         <div id="pagination"></div>
     </div>
+
 </div>
+<div class="empresas">
+    {#each results as item}
+        <p>{item.empresa}<br /><small>{item.categorias}</small></p>
+    {/each}
+</div>
+<hr />
+
+<label for="empresa">Empresa</label>
+<input type="text" id="empresa" value="" placeholder="Nome da empresa">
+<br />
+<label for="categorias">Categorias</label>
+<input type="text" id="categorias" value="" placeholder="Categorias1, categoria2, ...">
+<br />
+<label for="palavras_chave">palavras_chave</label>
+<input type="text" id="palavras_chave" value="" placeholder="p_chave1, p_chave2, ...">
+<br />
+<button on:click={addEmpresa}>Salvar</button>
