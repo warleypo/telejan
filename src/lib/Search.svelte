@@ -10,7 +10,7 @@
 
     let strSearch = ''
 
-    const client = algoliasearch(appId, adminApiKey)
+    const client = algoliasearch(appId, apiKey)
     const index = client.initIndex("telejan")
 
     let results = []
@@ -43,6 +43,8 @@
     const newId = () => Date.now()
 
     function addEmpresa (ev) {
+        const adminClient = algoliasearch(appId, apiKey)
+        const adminIndex = adminClient.initIndex("telejan")
         const empresa = {
             objectID: newId(),
             empresa: el('#empresa').value,
@@ -50,7 +52,7 @@
             palavras_chave: el('#palavras_chave').value,
         }
         // console.log(empresa)
-        index.saveObject(empresa)
+        adminIndex.saveObject(empresa)
             .then(savedObj => console.log('Empresa salva.', empresa))
             .catch(err => console.log('Erro ao salvar empresa.\n', err))
     }
