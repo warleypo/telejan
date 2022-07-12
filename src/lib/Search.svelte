@@ -1,7 +1,5 @@
 <script>
     import algoliasearch from 'algoliasearch'
-    import instantsearch from 'instantsearch.js'
-    import { searchBox, hits } from 'instantsearch.js/es/widgets'
     import Card from './Card.svelte'
 
     const appId = import.meta.env.VITE_APP_ID
@@ -43,13 +41,14 @@
     const newId = () => Date.now()
 
     function addEmpresa (ev) {
-        const adminClient = algoliasearch(appId, apiKey)
+        const adminClient = algoliasearch(appId, adminApiKey)
         const adminIndex = adminClient.initIndex("telejan")
         const empresa = {
             objectID: newId(),
             empresa: el('#empresa').value,
             categorias: el('#categorias').value,
             palavras_chave: el('#palavras_chave').value,
+            telefone: el('#telefone').value,
         }
         // console.log(empresa)
         adminIndex.saveObject(empresa)
@@ -76,6 +75,12 @@
     :global(em) {
         color: blue;
     }
+
+    .empresas {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
 </style>
 
 <div id="box">
@@ -92,9 +97,9 @@
             <input type="text" bind:value={strSearch} id="search">
         </div>
         <div id="hits">
-            {#each results as item}
+            <!-- {#each results as item}
                 <p on:click={() => strSearch = item.empresa}>{@html item._highlightResult.empresa.value}</p>
-            {/each}
+            {/each} -->
         </div>
         <div id="pagination"></div>
     </div>
@@ -102,7 +107,8 @@
 </div>
 <div class="empresas">
     {#each results as item}
-        <p>{item.empresa}<br /><small>{item.categorias}</small></p>
+        <Card empresa={item._highlightResult.empresa.value} categorias={item._highlightResult.categorias.value} telefone={item.telefone} />
+        <!-- <p>{item.empresa}<br /><small>{item.categorias}</small></p> -->
     {/each}
 </div>
 <hr />
@@ -115,5 +121,8 @@
 <br />
 <label for="palavras_chave">palavras_chave</label>
 <input type="text" id="palavras_chave" value="" placeholder="p_chave1, p_chave2, ...">
+<br />
+<label for="telefone">telefone</label>
+<input type="text" id="telefone" value="" placeholder="DDD 00000-0000">
 <br />
 <button on:click={addEmpresa}>Salvar</button>
